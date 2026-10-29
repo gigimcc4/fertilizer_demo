@@ -1,0 +1,21 @@
+# python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# secrets and local settings. copy .env.example to .env; never commit .env
+.env
+*.local
+
+# scenario flags and backups written at run time
+data/*
+!data/.gitkeep
+
+# OpenPLC Editor build output (large, machine-specific)
+plc/build/
+
+# os noise
+.DS_Store
+Thumbs.db
+*.log

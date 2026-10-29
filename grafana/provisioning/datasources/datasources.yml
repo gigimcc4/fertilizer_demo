@@ -1,0 +1,31 @@
+# grafana sets up both data sources on start, so nobody clicks through
+# "add data source". values come from .env through docker-compose.yml.
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    uid: influxdb_bagline1
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    isDefault: true
+    jsonData:
+      version: Flux
+      organization: ${INFLUX_ORG}
+      defaultBucket: ${INFLUX_BUCKET}
+    secureJsonData:
+      token: ${INFLUX_TOKEN}
+
+  - name: TimescaleDB
+    uid: postgres_plant
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: timescaledb:5432
+    user: ${PG_USER}
+    jsonData:
+      database: ${PG_DB}
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true
+    secureJsonData:
+      password: ${PG_PASS}

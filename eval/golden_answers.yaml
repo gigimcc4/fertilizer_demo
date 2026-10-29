@@ -1,0 +1,46 @@
+# golden answers: the evaluation set
+#
+# two kinds of item:
+#
+# 1) grounded ("did it pull it right?"): you don't write the answer. you name
+#    a function in eval/ground_truth.py that computes the true value from the
+#    stored data at run time. the benchmark checks whether the chat answer
+#    contains that number (within tolerance).
+#
+# 2) concept: a reference answer you write, scored by keyword coverage.
+#
+# note: the chat block covers lots, shifts and days, not arbitrary minute
+# windows. grounded questions here use windows the block can answer
+# ("since the poller started" and lot totals live in it; "last 60 minutes"
+# only works if you add that to chat_health.py). failing those is a finding
+# about the context, not the model.
+
+# ---- grounded -----------------------------------------------------------
+- tag: lot
+  question: "How many short bags are in the current lot?"
+  truth: { fn: current_lot_short_count, type: count, tolerance: 0 }
+
+- tag: silo
+  question: "What is the silo level right now, in percent?"
+  truth: { fn: latest_silo_pct, type: numeric, unit: "%", tolerance: 1 }
+
+- tag: oee
+  question: "What is the OEE right now?"
+  truth: { fn: latest_oee, type: numeric, unit: "%", tolerance: 0.5 }
+
+# ---- concept ------------------------------------------------------------
+- tag: concept
+  question: "Why does a slowly clogging gate show up in fill time before it shows up in bag weight?"
+  golden_answer: >
+    the level sensor still stops the fill at the same weight, so bag weight
+    stays in spec while the gate takes longer to deliver it. fill time drifts
+    up from its baseline, which the spc z-score catches early.
+  must_include: "fill time, level sensor, weight"
+
+- tag: concept
+  question: "What is giveaway and why does it matter on a bagging line?"
+  golden_answer: >
+    giveaway is product over the label net weight that the plant ships for
+    free. a little over the label is normal to stay safe from short fills, but
+    across thousands of bags it adds up to a cost.
+  must_include: "label, free, cost"

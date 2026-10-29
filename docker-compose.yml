@@ -1,0 +1,128 @@
+# fertilizer bagging line demo: plc + plant + edge poller + data stores + dashboard + chat
+#
+# start:   docker compose up -d --build
+# stop:    docker compose down          (data is kept in docker volumes)
+# wipe:    docker compose down -v       (deletes the data too)
+#
+# which plc runs is set in .env:
+#   COMPOSE_PROFILES=softplc  PLC_HOST=softplc   the ladder in python, no extra software (default)
+#   COMPOSE_PROFILES=openplc  PLC_HOST=openplc   your ladder in the OpenPLC runtime (see SETUP.md)
+#
+# every port is published on 127.0.0.1 only, so nothing here is reachable
+# from other computers on your network.
+
+x-app: &app
+  build: .
+  image: fertilizer-demo-app
+  env_file: .env
+  restart: unless-stopped
+  volumes:
+    - ./data:/app/data            # scenario trigger files (./run.sh event ...)
+  environment: &app-env
+    PLC_PORT: "1502"
+    INFLUX_URL: http://influxdb:8086
+    PG_HOST: timescaledb
+    PG_PORT: "5432"
+    DATA_DIR: /app/data
+
+services:
+  # --- the plc: pick one with COMPOSE_PROFILES in .env ---------------------
+  openplc:
+    profiles: ["openplc"]
+    # same runtime build as the garage door project (v4.3.1), pinned by digest
+    image: ghcr.io/autonomy-logic/openplc-runtime@sha256:2ca9fc611f25c3ad0471b996a4bf27507ac112612292426ca6d5ca4bf06e97e6
+    ports:
+      - "127.0.0.1:1502:1502"     # modbus
+      - "127.0.0.1:8443:8443"     # OpenPLC Editor uploads the ladder here
+    volumes:
+      - openplc-fert-data:/var/run/runtime   # its own volume, separate from the garage door project
+    restart: unless-stopped
+
+  softplc:
+    <<: *app
+    profiles: ["softplc"]
+    command: ["python", "soft_plc.py"]
+    ports:
+      - "127.0.0.1:1502:1502"
+
+  # --- the line around the plc + the edge box ------------------------------
+  plant:
+    <<: *app
+    command: ["python", "plant_sim.py"]
+
+  poller:
+    <<: *app
+    command: ["python", "edge_poller.py"]
+    depends_on: [influxdb, timescaledb]
+
+  web:
+    <<: *app
+    command: ["python", "chat_web.py"]
+    environment:
+      <<: *app-env
+      CHAT_WEB_BIND: 0.0.0.0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets the container reach Ollama on your computer
+    ports:
+      - "127.0.0.1:8600:8600"
+    depends_on: [influxdb, timescaledb]
+
+  # --- data stores + dashboard ---------------------------------------------
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "127.0.0.1:8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_ADMIN_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+    volumes:
+      - fert-influxdb-data:/var/lib/influxdb2
+    restart: unless-stopped
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      POSTGRES_DB: ${PG_DB}
+    volumes:
+      - fert-timescaledb-data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro   # runs on first start only
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_ALLOW_EMBEDDING: "true"        # the chat page embeds the dashboard
+      GF_AUTH_ANONYMOUS_ENABLED: "true"          # view-only without logging in (this computer only)
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/fert-bagline1.json
+      # read by grafana/provisioning/datasources/datasources.yml
+      INFLUX_ORG: ${INFLUX_ORG}
+      INFLUX_BUCKET: ${INFLUX_BUCKET}
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
+      PG_USER: ${PG_USER}
+      PG_PASS: ${PG_PASS}
+      PG_DB: ${PG_DB}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - fert-grafana-data:/var/lib/grafana
+    depends_on: [influxdb, timescaledb]
+    restart: unless-stopped
+
+volumes:
+  openplc-fert-data:
+  fert-influxdb-data:
+  fert-timescaledb-data:
+  fert-grafana-data:

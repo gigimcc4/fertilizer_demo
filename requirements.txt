@@ -1,0 +1,8 @@
+# pinned and tested together. the docker image installs requirements.lock.txt.
+# pymodbus is held at 3.8.x: 3.9+ rewrote the datastore api soft_plc.py uses.
+pymodbus==3.8.6
+influxdb-client==1.50.0
+anthropic==0.121.0
+psycopg2-binary==2.9.12
+PyYAML==6.0.2          # eval harness
+tzdata==2025.2         # time zones for shifts; the slim python image has none
