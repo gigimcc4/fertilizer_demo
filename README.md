@@ -1,4 +1,4 @@
-# fertilizer bagging line (simulated)
+# Fertilizer bagging line (simulated)
 
 A silo fills 50 lb bags of fertilizer on a conveyor. the PLC runs the fill with the ladder from the silo lab. an edge poller reads the PLC, weighs every bag against the label, ties it to a lot and a shift, and raises an alarm when something drifts. A dashboard shows the line, and you can ask questions about it in English, with a local model by default so nothing leaves the building.
 
@@ -6,9 +6,11 @@ Everything is simulated and runs on one laptop in docker. the company, Brightfie
 
 This is episode 2 of a series on what an AI builder does with the labs in a PLC course (Johnston Community College, Advanced Manufacturing Training Facility, Four Oaks NC). episode 1 was the [garage door](https://github.com/gigimcc4/PLC-yolo-garagedoor).
 
-## why fertilizer
+## Why fertilizer
 
 Fertilizer is a regulated product. In North Carolina, inspectors sample it where it's sold, and a product that tests short of its guaranteed analysis brings penalties and can get a stop-sale order ([NCDA&CS](https://www.ncagr.gov/divisions/plant-industry/seed-and-fertilizer/inspections-compliance), [G.S. 106-665](https://ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_106/GS_106-665.html)). Packaged net weight is checked separately, using the procedures in [NIST Handbook 133](https://www.nist.gov/document/00-20-h133-titlefinaldocx).
+
+Plus my B.S. is in horticulture and I love love love to talk soil and soil amendments.
 
 A bagging line sits between two costs:
 
@@ -17,7 +19,7 @@ A bagging line sits between two costs:
 
 This demo keeps the records that let a plant answer "which lot, which shift, what were the fills" when someone asks. the fill line controls weight, not nutrient analysis (that comes from blending upstream), and nothing here makes a plant compliant. it's a demo of the record keeping.
 
-## how it works
+## How it works
 
 ```mermaid
 flowchart LR
@@ -34,12 +36,12 @@ flowchart LR
     chat --> audit[("chat_audit<br/>what was asked,<br/>what data was sent")]
 ```
 
-- **the PLC** runs the same six rungs as the silo lab. bag arrives, gate opens, level sensor trips, bag moves on
-- **plant_sim** plays everything physical: the silo draining and refilling, the gate's flow, the bag filling, the scale. it writes each bag's net weight into PLC memory, the way a scale wired to the PLC would
-- **the edge poller** does all the checking with plain rules and statistics, every half second. no model is called per tick
-- **the chat** only reads what the poller already recorded, and logs every question with the exact data that was sent to the model
+- **The PLC** runs the same six rungs as the silo lab. bag arrives, gate opens, level sensor trips, bag moves on
+- **Plant_sim** plays everything physical: the silo draining and refilling, the gate's flow, the bag filling, the scale. it writes each bag's net weight into PLC memory, the way a scale wired to the PLC would
+- **The edge poller** does all the checking with plain rules and statistics, every half second. no model is called per tick
+- **The chat** only reads what the poller already recorded, and logs every question with the exact data that was sent to the model
 
-## what the poller catches
+## What the poller catches
 
 | alarm | what happened | how it's found |
 | --- | --- | --- |
@@ -53,7 +55,7 @@ flowchart LR
 
 limits are in `config.py` and `.env`.
 
-## scenarios
+## Scenarios
 
 fire these while it runs and watch the dashboard and the alarms:
 
@@ -69,7 +71,7 @@ fire these while it runs and watch the dashboard and the alarms:
 
 `./run.sh seed` writes two weeks of history with three stories in it (a gate clog over a few days, a sensor drift that put a couple hundred short bags into one lot, a late refill) so there's something to ask about.
 
-## questions to try
+## Questions to try in chat with data
 
 - is the bagging line healthy right now?
 - which lots had short fills in the last two weeks, and on which shift?
@@ -97,7 +99,7 @@ turn on "show the data the model saw" to see exactly what went to the model. eve
 | `docker-compose.yml`, `Dockerfile` | the whole stack |
 | `docs/DATA_DICTIONARY.md` | every table, field and tag |
 
-## start
+## Start
 
 see [SETUP.md](SETUP.md). the short version, with Docker Desktop running:
 
@@ -108,7 +110,7 @@ cp .env.example .env      # then change the passwords
 
 dashboard at http://localhost:3000, chat at http://localhost:8600.
 
-## the ladder
+## The ladder
 
 ```
 rung 1  run_light  := (start OR run_light) AND stop
@@ -138,9 +140,9 @@ rung 6  release    := (start OR release) AND full_light AND prox
 | silo % | %MW3 | holding 1027 | plant_sim |
 | gate flow lb/s x10 | %MW4 | holding 1028 | plant_sim |
 
-in the lab, the inputs were `%IX`. here they are `%MX`, because python can only write PLC memory over modbus, not physical inputs. same reason as the garage door.
+In the lab, the inputs were `%IX`. here they are `%MX`, because python can only write PLC memory over modbus, not physical inputs. 
 
-## limits
+## Limits
 
 - **simulated.** the silo, bags and scale are python. nothing here is safety-rated or meant to run equipment
 - **not a compliance system.** the short and over limits are demo numbers, not the tolerances in NIST Handbook 133 or state rules. a plant would set them from those, with its own checkweigher
@@ -148,7 +150,7 @@ in the lab, the inputs were `%IX`. here they are `%MX`, because python can only 
 - **fill timeout lives in the poller, not the ladder.** on a production line a stuck gate would also be stopped by the PLC (a timer and a fault). the poller records it; it doesn't stop anything
 - **the chat is only as good as its data block.** it can answer about lots, shifts, days and the live window. it can't answer about a time range the block doesn't include. `eval/` is there to measure that
 
-## shut down
+## Shut down
 
 ```
 ./run.sh down          # stop, keep the data
@@ -160,6 +162,6 @@ docker compose down -v # stop and delete the data
 - [OpenPLC](https://autonomylogic.com/) runtime and editor
 - [InfluxDB](https://www.influxdata.com/), [TimescaleDB](https://www.timescale.com/), [Grafana](https://grafana.com/)
 - [pymodbus](https://github.com/pymodbus-dev/pymodbus)
-- [Ollama](https://ollama.com/) for the local model, or the [Claude API](https://docs.claude.com)
+- [Ollama](https://ollama.com/) for the local model, or any proprietary model
 
 built by Dr. Jeanne McClure, Ars Innovate Technologies. MIT license.
