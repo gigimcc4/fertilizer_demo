@@ -1,21 +1,21 @@
 # fertilizer bagging line (simulated)
 
-a silo fills 50 lb bags of fertilizer on a conveyor. the PLC runs the fill with the ladder from the silo lab. an edge poller reads the PLC, weighs every bag against the label, ties it to a lot and a shift, and raises an alarm when something drifts. a dashboard shows the line, and you can ask questions about it in plain English, with a local model by default so nothing leaves the building.
+A silo fills 50 lb bags of fertilizer on a conveyor. the PLC runs the fill with the ladder from the silo lab. an edge poller reads the PLC, weighs every bag against the label, ties it to a lot and a shift, and raises an alarm when something drifts. A dashboard shows the line, and you can ask questions about it in English, with a local model by default so nothing leaves the building.
 
-everything is simulated and runs on one laptop in docker. the company, Brightfield Fertilizer, is made up.
+Everything is simulated and runs on one laptop in docker. the company, Brightfield Fertilizer, is made up.
 
-episode 2 of a series on what an AI builder does with the labs in a PLC course (Johnston Community College, Advanced Manufacturing Training Facility, Four Oaks NC). episode 1 was the [garage door](https://github.com/gigimcc4/PLC-yolo-garagedoor).
+This is episode 2 of a series on what an AI builder does with the labs in a PLC course (Johnston Community College, Advanced Manufacturing Training Facility, Four Oaks NC). episode 1 was the [garage door](https://github.com/gigimcc4/PLC-yolo-garagedoor).
 
 ## why fertilizer
 
-fertilizer is a regulated product. in North Carolina, inspectors sample it where it's sold, and a product that tests short of its guaranteed analysis brings penalties and can get a stop-sale order ([NCDA&CS](https://www.ncagr.gov/divisions/plant-industry/seed-and-fertilizer/inspections-compliance), [G.S. 106-665](https://ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_106/GS_106-665.html)). packaged net weight is checked separately, using the procedures in [NIST Handbook 133](https://www.nist.gov/document/00-20-h133-titlefinaldocx).
+Fertilizer is a regulated product. In North Carolina, inspectors sample it where it's sold, and a product that tests short of its guaranteed analysis brings penalties and can get a stop-sale order ([NCDA&CS](https://www.ncagr.gov/divisions/plant-industry/seed-and-fertilizer/inspections-compliance), [G.S. 106-665](https://ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_106/GS_106-665.html)). Packaged net weight is checked separately, using the procedures in [NIST Handbook 133](https://www.nist.gov/document/00-20-h133-titlefinaldocx).
 
-a bagging line sits between two costs:
+A bagging line sits between two costs:
 
 - **short bags** are a compliance problem
 - **overfilled bags** are product given away for free, a fraction of a pound at a time, thousands of times a day
 
-this demo keeps the records that let a plant answer "which lot, which shift, what were the fills" when someone asks. the fill line controls weight, not nutrient analysis (that comes from blending upstream), and nothing here makes a plant compliant. it's a demo of the record keeping.
+This demo keeps the records that let a plant answer "which lot, which shift, what were the fills" when someone asks. the fill line controls weight, not nutrient analysis (that comes from blending upstream), and nothing here makes a plant compliant. it's a demo of the record keeping.
 
 ## how it works
 
